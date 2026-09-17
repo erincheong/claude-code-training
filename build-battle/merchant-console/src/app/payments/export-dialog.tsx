@@ -29,6 +29,19 @@ const LABELS: Record<ExportColumn, string> = {
 }
 
 /**
+ * The params that choose which rows are in the file, as opposed to how they
+ * are ordered. Exporting "all payments" clears these and leaves the rest.
+ */
+const ROW_FILTER_PARAMS = [
+  "status",
+  "merchantId",
+  "search",
+  "from",
+  "to",
+  "page",
+]
+
+/**
  * Export options for the payments table (NWP-101).
  *
  * The counts are passed in rather than fetched: the page already has them from
@@ -55,7 +68,13 @@ export function ExportDialog({
           EXPORT_COLUMNS.filter((c) => c === column || current.includes(c)),
     )
 
-  const params = new URLSearchParams(scope === "all" ? "" : query)
+  // Scope chooses the rows, so "all" drops the row filters. Sort is
+  // presentation and survives either way: the route honours it on both paths,
+  // and an export should come back in the order ops was just looking at.
+  const params = new URLSearchParams(query)
+  if (scope === "all") {
+    for (const key of ROW_FILTER_PARAMS) params.delete(key)
+  }
   params.set("columns", selected.join(","))
   params.set("scope", scope)
   const href = `/api/payments/export?${params.toString()}`

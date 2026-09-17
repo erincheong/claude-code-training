@@ -98,6 +98,17 @@ export function paginate<T>(rows: T[], page = 1, pageSize = PAGE_SIZE) {
   }
 }
 
+/**
+ * How many payments match, without sorting or paginating them.
+ *
+ * For a caller that wants a count and nothing else, `queryPayments` sorts the
+ * whole matching set and then throws the rows away. Same builder, same
+ * filters, none of the work that only a page of rows needs.
+ */
+export function countPayments(filters: PaymentFilters): number {
+  return filterPayments(filters).length
+}
+
 /** Filter, sort, and paginate in one call. Use this rather than composing by hand. */
 export function queryPayments(filters: PaymentFilters) {
   const filtered = filterPayments(filters)

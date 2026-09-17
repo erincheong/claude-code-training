@@ -10,7 +10,7 @@ import {
 } from "@/components/Table"
 import { StatusBadge } from "@/components/ui/payments/StatusBadge"
 import { merchantById, merchants } from "@/data/merchants"
-import { queryPayments } from "@/data/queries"
+import { countPayments, queryPayments } from "@/data/queries"
 import { PaymentFilters, PaymentStatus } from "@/data/types"
 import { formatDate } from "@/lib/dates"
 import { formatMoney } from "@/lib/money"
@@ -44,8 +44,9 @@ export default async function PaymentsPage({
 
   const { rows, total, page, pageCount } = queryPayments(filters)
   // The export dialog shows both counts before download, so ops knows what
-  // "all payments" means without guessing. Same builder, no criteria.
-  const { total: allTotal } = queryPayments({ status: "all" })
+  // "all payments" means without guessing. Same builder, no criteria — and a
+  // count, so the unfiltered table is not sorted on every render of this page.
+  const allTotal = countPayments({ status: "all" })
   const query = new URLSearchParams(
     Object.entries(params).filter(([, v]) => Boolean(v)) as [string, string][],
   )
