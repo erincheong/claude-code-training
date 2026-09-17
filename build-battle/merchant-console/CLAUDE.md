@@ -11,7 +11,29 @@ npm install
 npm run dev
 ```
 
-No database, no seed step, no Docker.
+Open http://localhost:3000. No database, no seed step, no Docker.
+
+## Commands
+
+```bash
+npm run dev                            # dev server, :3000
+npm run build                          # production build
+npm run lint                           # eslint (next/core-web-vitals)
+npm test                               # vitest run, once
+npm run test:watch                     # vitest, watch mode
+npx vitest run src/lib/money.test.ts   # a single test file
+```
+
+Vitest runs in a plain Node environment (no jsdom), scoped to `src/**/*.test.ts`. Today that's the money, date, and CSV helpers in `src/lib/` only — components and route handlers aren't unit-tested, so verify those by hand in the running app.
+
+## Architecture
+
+Request flow for payments is the pattern every list-and-filter feature here follows:
+
+1. `src/data/generate.ts` builds the seed data once; `src/data/store.ts` holds it on `globalThis` so Next's dev-server module reloading doesn't hand every request a fresh copy.
+2. `src/data/queries.ts` is the one query builder: `parseFilters` turns raw `URLSearchParams` into an allowlisted `PaymentFilters`, then `filterPayments` → `sortPayments` → `paginate` compose into `queryPayments`. Anything that lists, filters, or exports payments calls into this file rather than reading `store.payments` directly — see `src/app/api/payments/route.ts` and `src/app/api/payments/export/route.ts` for the two current callers.
+3. Route handlers under `src/app/api/` stay thin: parse filters, call the query builder, return JSON (or CSV). They don't touch `src/data/store.ts` directly.
+4. Pages under `src/app/` fetch from those routes rather than importing `src/data/` themselves.
 
 ## Data lives in memory
 
@@ -53,9 +75,15 @@ These four explain most of the code, and breaking them is how bugs get in here.
 | --- | --- |
 | `src/app/` | Console routes: overview, payments, disputes, payouts. Cards is NWP-201 and does not exist yet |
 | `src/app/api/` | Route handlers |
-| `src/data/` | Seed JSON, the in-memory store, and types |
+| `src/data/` | Seed JSON, the in-memory store, `queries.ts` (the query builder), and types |
 | `src/components/` | Tremor-based primitives and the console's own components |
 | `src/lib/` | Money, date, and CSV helpers, each with a `.test.ts` beside it. Read these before touching an amount |
+
+## Release Standards
+
+- All changes need test evidence before merging.
+- No direct commits to `main`.
+- Every PR must include a one-line business impact summary.
 
 ## Before you push
 

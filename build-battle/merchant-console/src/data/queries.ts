@@ -77,8 +77,9 @@ export function sortPayments(
   const factor = direction === "asc" ? 1 : -1
   return [...payments].sort((a, b) => {
     if (sort === "amount") {
-      // Sort by the formatted amount so the order matches what the table shows.
-      return String(a.amount).localeCompare(String(b.amount)) * factor
+      // Amounts are integer minor units, so compare them as numbers. Comparing
+      // the digits as text puts 994 after 1000, which is what this did before.
+      return (a.amount - b.amount) * factor
     }
     return a.createdAt.localeCompare(b.createdAt) * factor
   })
@@ -96,6 +97,17 @@ export function paginate<T>(rows: T[], page = 1, pageSize = PAGE_SIZE) {
     pageCount,
     pageSize,
   }
+}
+
+/**
+ * How many payments match, without sorting or paginating them.
+ *
+ * For a caller that wants a count and nothing else, `queryPayments` sorts the
+ * whole matching set and then throws the rows away. Same builder, same
+ * filters, none of the work that only a page of rows needs.
+ */
+export function countPayments(filters: PaymentFilters): number {
+  return filterPayments(filters).length
 }
 
 /** Filter, sort, and paginate in one call. Use this rather than composing by hand. */
